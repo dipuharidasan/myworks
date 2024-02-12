@@ -5,7 +5,7 @@ if [ -d "addressbook" ]
 then 
   echo "repo is cloned and exists"
   cd /home/ec2-user/myworks
-  git pull origin master
+  git pull origin main
 else
   echo "repo is not there"
  git clone https://github.com/dipuharidasan/myworks.git
