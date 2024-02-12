@@ -11,7 +11,7 @@ pipeline {
    }
     stages {
         stage('Compile') {
-           agent any
+           agent none
             steps {
               script{
                   echo "BUILDING THE CODE"
@@ -20,7 +20,7 @@ pipeline {
             }
             }
         stage('UnitTest') {
-        agent any
+        agent none
         steps {
             script{
               echo "TESTING THE CODE"
@@ -34,7 +34,7 @@ pipeline {
             }
             }
         stage('PACKAGE+BUILD DOCKERIMAGE AND PUSH TO DOKCERHUB') {
-            agent any            
+            agent none            
             steps {
                 script{
                 sshagent(['BUILD_SERVER_KEY']) {
@@ -51,7 +51,7 @@ pipeline {
         }
         }
        stage('DEPLOY DOCKER CONATINER'){
-           agent any
+           agent none
            steps{
                script{
                     sshagent(['DEPLOY_SERVER_KEY']){
