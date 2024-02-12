@@ -4,12 +4,12 @@ sudo yum install maven -y
 if [ -d "addressbook" ]
 then 
   echo "repo is cloned and exists"
-  cd /home/ec2-user/addressbook
+  cd /home/ec2-user/myworks
   git pull origin master
 else
   echo "repo is not there"
- git clone https://github.com/preethid/addressbook.git
- cd /home/ec2-user/addressbook
+ git clone https://github.com/dipuharidasan/myworks.git
+ cd /home/ec2-user/myworks
 fi
  mvn package
  sudo yum install docker -y
