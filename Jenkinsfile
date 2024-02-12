@@ -1,0 +1,69 @@
+pipeline {
+   agent none
+   tools{
+         jdk 'Myjava'
+         maven 'mymaven'
+   }
+   environment{
+       BUILD_SERVER_IP='ec2-user@35.154.187.90'
+       IMAGE_NAME='devopstrainer/java-mvn-privaterepos:$BUILD_NUMBER'
+       DEPLOY_SERVER_IP='ec2-user@13.126.71.124'
+   }
+    stages {
+        stage('Compile') {
+           agent any
+            steps {
+              script{
+                  echo "BUILDING THE CODE"
+                  sh 'mvn compile'
+              }
+            }
+            }
+        stage('UnitTest') {
+        agent any
+        steps {
+            script{
+              echo "TESTING THE CODE"
+              sh "mvn test"
+              }
+            }
+            post{
+                always{
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+            }
+        stage('PACKAGE+BUILD DOCKERIMAGE AND PUSH TO DOKCERHUB') {
+            agent any            
+            steps {
+                script{
+                sshagent(['BUILD_SERVER_KEY']) {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+                echo "Packaging the apps"
+                sh "scp -o StrictHostKeyChecking=no server-script.sh ${BUILD_SERVER_IP}:/home/ec2-user"
+                sh "ssh -o StrictHostKeyChecking=no ${BUILD_SERVER_IP} 'bash ~/server-script.sh'"
+                sh "ssh ${BUILD_SERVER_IP} sudo docker build -t ${IMAGE_NAME} /home/ec2-user/addressbook"
+                sh "ssh ${BUILD_SERVER_IP} sudo docker login -u $USERNAME -p $PASSWORD"
+                sh "ssh ${BUILD_SERVER_IP} sudo docker push ${IMAGE_NAME}"
+              }
+            }
+            }
+        }
+        }
+       stage('DEPLOY DOCKER CONATINER'){
+           agent any
+           steps{
+               script{
+                    sshagent(['DEPLOY_SERVER_KEY']){
+                         withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+                         sh "ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER_IP} sudo yum install docker -y"
+                         sh "ssh ${DEPLOY_SERVER_IP} sudo systemctl start docker"
+                         sh "ssh ${DEPLOY_SERVER_IP} sudo docker login -u $USERNAME -p $PASSWORD"
+                         sh "ssh ${DEPLOY_SERVER_IP} sudo docker run -itd -P ${IMAGE_NAME}"
+                         }
+                    }
+               }
+           }
+       }
+    }
+}
